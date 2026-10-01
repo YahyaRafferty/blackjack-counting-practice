@@ -23,7 +23,6 @@
     --good:#2e8b46;
     --bad:#b33b30;
 
-    /* Table theme (color picker overrides these) */
     --table-deep:#052a20;
     --table-mid:#0c3d2c;
     --table-light:#175c3f;
@@ -195,7 +194,6 @@
     overflow:hidden;
   }
   .shoe-stack::before{
-    /* deck-boundary guide lines, one every 52-card deck, drawn over everything */
     content:'';
     position:absolute;
     inset:0;
@@ -428,7 +426,6 @@
   .history-row .h-num{color:var(--text-on-paper-dim);min-width:20px;}
   .history-empty{font-size:0.82rem;color:var(--text-on-paper-dim);text-align:center;margin-top:20px;}
 
-  /* ---- v3 additions ---- */
   .sblock{padding-bottom:6px;}
   .setting-row.col{flex-direction:column;align-items:stretch;gap:6px;}
   .slabel{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-on-paper-dim);font-weight:700;}
@@ -808,34 +805,27 @@
 (function(){
   "use strict";
 
-  const FEEDBACK_DELAY = 1400; // default ms to let the player read the correct/incorrect message before advancing
+  const FEEDBACK_DELAY = 1400;
 
   // ---- Card counting systems ----
-  // Each system defines a per-rank tag value and the true count at which insurance pays.
-  // Both are balanced: the running count is divided by the decks left to get the true count.
-  // Omega II is ace-neutral (A = 0), so bet sizing adds an ace side count (see aceAdjustment).
   const COUNT_SYSTEMS = {
     hilo: {
       label: 'Hi-Lo',
-      insuranceThreshold: 3, // true count >= +3
+      insuranceThreshold: 3,
       tags: {'2':1,'3':1,'4':1,'5':1,'6':1,'7':0,'8':0,'9':0,'10':-1,'J':-1,'Q':-1,'K':-1,'A':-1}
     },
     omega2: {
       label: 'Omega II',
-      insuranceThreshold: 5, // true count >= +5 (ten tag is -2)
+      insuranceThreshold: 5,
       tags: {'2':1,'3':1,'4':2,'5':2,'6':2,'7':1,'8':0,'9':-1,'10':-2,'J':-2,'Q':-2,'K':-2,'A':0}
     }
   };
-  const SUITS = ['\u2660','\u2665','\u2666','\u2663']; // spade heart diamond club
+  const SUITS = ['\u2660','\u2665','\u2666','\u2663'];
   const RED_SUITS = ['\u2665','\u2666'];
   const RANKS = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
-  const ORDER = ['2','3','4','5','6','7','8','9','10','A']; // dealer up-card column order
+  const ORDER = ['2','3','4','5','6','7','8','9','10','A'];
 
   // ---- Basic strategy tables ----
-  // Source: Wizard of Odds 4-8 deck basic strategy. Dealer column order is
-  // always [2,3,4,5,6,7,8,9,10,A] (see ORDER below).
-  // H = Hit, S = Stand, D = Double else Hit (Dh), Ds = Double else Stand,
-  // P = Split, R = Surrender else Hit (Rh) / Surrender else Split for pairs.
   function cloneRows(rows){
     const out = {};
     for(const k in rows) out[k] = rows[k].slice();
@@ -856,8 +846,6 @@
   hardRowsS17[16] = ['S','S','S','S','S','H','H','R','R','R'];
   for(let t=17;t<=21;t++) hardRowsS17[t] = ['S','S','S','S','S','S','S','S','S','S'];
 
-  // Soft totals, rows for total 13(A,2)..20(A,9). Double soft 17/18 only vs
-  // 3-6, stand (no double) on soft 18 vs 2 and soft 19 vs 6, always stand soft 19+.
   const softRowsS17 = {
     13:['H','H','H','D','D','H','H','H','H','H'],
     14:['H','H','H','D','D','H','H','H','H','H'],
@@ -869,7 +857,6 @@
     20:['S','S','S','S','S','S','S','S','S','S']
   };
 
-  // Pairs, keyed by normalized rank group
   const pairRowsS17 = {
     '2':['P','P','P','P','P','P','H','H','H','H'],
     '3':['P','P','P','P','P','P','H','H','H','H'],
@@ -884,27 +871,19 @@
   };
 
   // --- H17 tables (dealer HITS on soft 17) ---
-  // Per Wizard of Odds, only these cells change vs. the S17 base:
-  //  - Double hard 11 vs. dealer A (S17: hit)
-  //  - Surrender hard 15 vs. dealer A (S17: hit)
-  //  - Surrender hard 17 vs. dealer A (S17: stand)
-  //  - Surrender pair of 8s vs. dealer A, else split (S17: always split)
-  //  - Double soft 18 vs. dealer 2 (S17: stand)
-  //  - Double soft 19 vs. dealer 6 (S17: stand)
   const hardRowsH17 = cloneRows(hardRowsS17);
-  hardRowsH17[11] = hardRowsS17[11].slice(); hardRowsH17[11][9] = 'D'; // vs A
-  hardRowsH17[15] = hardRowsS17[15].slice(); hardRowsH17[15][9] = 'R'; // vs A
-  hardRowsH17[17] = hardRowsS17[17].slice(); hardRowsH17[17][9] = 'R'; // vs A
+  hardRowsH17[11] = hardRowsS17[11].slice(); hardRowsH17[11][9] = 'D';
+  hardRowsH17[15] = hardRowsS17[15].slice(); hardRowsH17[15][9] = 'R';
+  hardRowsH17[17] = hardRowsS17[17].slice(); hardRowsH17[17][9] = 'R';
 
   const softRowsH17 = cloneRows(softRowsS17);
-  softRowsH17[18] = softRowsS17[18].slice(); softRowsH17[18][0] = 'Ds'; // vs 2
-  softRowsH17[19] = softRowsS17[19].slice(); softRowsH17[19][4] = 'Ds'; // vs 6
+  softRowsH17[18] = softRowsS17[18].slice(); softRowsH17[18][0] = 'Ds';
+  softRowsH17[19] = softRowsS17[19].slice(); softRowsH17[19][4] = 'Ds';
 
   const pairRowsH17 = cloneRows(pairRowsS17);
-  pairRowsH17['8'] = pairRowsS17['8'].slice(); pairRowsH17['8'][9] = 'R'; // vs A
+  pairRowsH17['8'] = pairRowsS17['8'].slice(); pairRowsH17['8'][9] = 'R';
 
   // --- No double after split (Wizard of Odds): split 2s and 3s only against a 4-7, never split 4s
-  // (with DAS they are split against 5-6), split 6s against 3-6. Everything else is unchanged.
   function ndasPairRows(rows){
     const out = cloneRows(rows);
     out['2'] = ['H','H','P','P','P','P','H','H','H','H'];
@@ -923,16 +902,12 @@
     return STRATEGY[state.dealerRule + (state.das ? '' : 'nd')] || STRATEGY.s17;
   }
 
-  // ---- Wizard of Odds "Effect of Card Removal" (six decks, DAS): change in the player's expected value,
-  // in percent, when one card of that rank is removed from the shoe. Used to (1) value each counting
-  // system, (2) size each system's ace adjustment and (3) convert Hi-Lo index numbers to Omega II.
+  // Effect-of-removal data: Wizard of Odds
   const EOR = {
     s17: {'2':0.069,'3':0.082,'4':0.110,'5':0.141,'6':0.079,'7':0.041,'8':-0.008,'9':-0.040,'10':-0.091,'A':-0.094},
     h17: {'2':0.071,'3':0.086,'4':0.117,'5':0.143,'6':0.084,'7':0.038,'8':-0.010,'9':-0.045,'10':-0.097,'A':-0.084}
   };
   function eorTable(){ return EOR[state.dealerRule] || EOR.s17; }
-  // Weighted least-squares slope of EOR against a system's tags = EV (in %) per tag point per card removed.
-  // Weights are cards of that rank per deck (16 for tens).
   function systemSlope(sysKey, table){
     const tags = COUNT_SYSTEMS[sysKey].tags;
     let num = 0, den = 0;
@@ -946,15 +921,12 @@
   }
   function sgn(n){ return (n>0 ? '+' : '') + n; }
 
-  // ---- Index plays. Hi-Lo numbers are the Wizard of Odds Illustrious 18 (insurance is handled separately)
-  // and Fab 4 surrender tables. Play `hi` when the true count is at or above the index, otherwise `lo`.
+  // Index plays: Hi-Lo values from Wizard of Odds (Illustrious 18, Fab 4); Omega II values are scaled estimates
   const DEVIATIONS = [
-    // Fab 4 surrenders (need late surrender). 15 vs A is S17-only: under H17 basic strategy already surrenders it.
     {type:'hard', key:'14', up:'10', idx:3,  hi:'R', lo:'H', needsSurrender:true},
     {type:'hard', key:'15', up:'10', idx:0,  hi:'R', lo:'H', needsSurrender:true},
     {type:'hard', key:'15', up:'9',  idx:2,  hi:'R', lo:'H', needsSurrender:true},
     {type:'hard', key:'15', up:'A',  idx:1,  hi:'R', lo:'H', needsSurrender:true, s17Only:true},
-    // Illustrious 18
     {type:'hard', key:'16', up:'10', idx:0,  hi:'S', lo:'H'},
     {type:'hard', key:'15', up:'10', idx:4,  hi:'S', lo:'H'},
     {type:'pair', key:'10', up:'5',  idx:5,  hi:'P', lo:'S'},
@@ -973,8 +945,6 @@
     {type:'hard', key:'12', up:'6',  idx:-1, hi:'S', lo:'H'},
     {type:'hard', key:'13', up:'3',  idx:-2, hi:'S', lo:'H'}
   ];
-  // Hi-Lo indices are used as published. For Omega II each index is scaled by the ratio of
-  // the two systems' EV-per-true-count (from the removal data above) - an approximation, not a published table.
   function deviationScale(sysKey){
     sysKey = sysKey || state.countSystem;
     if(sysKey === 'hilo') return 1;
@@ -987,7 +957,6 @@
   function deviationsActive(){
     return state.useDeviations && (state.mode==='counting' || state.mode==='betsizing');
   }
-  // Returns {act, idx, tc} if an index play applies to this decision (relative to the basic-strategy action), else null.
   function findDeviation(basicAct, cards, dealerUpRank, canDouble, canSplit, canSurrender){
     const up = normalizeRank(dealerUpRank);
     let type, key;
@@ -1030,8 +999,6 @@
     return {total, soft: aces>0};
   }
 
-  // Returns the "textbook correct" action for a given hand state.
-  // canSurrender should only be true on an initial two-card, non-split hand.
   function correctAction(cards, dealerUpRank, canDouble, canSplit, canSurrender){
     const dIdx = dealerIdx(dealerUpRank);
     const { hardRows, softRows, pairRows } = currentStrategy();
@@ -1039,8 +1006,6 @@
       const g = normalizeRank(cards[0].rank);
       let act = pairRows[g][dIdx];
       if(act==='D' && !canDouble) return 'H';
-      // Pairs fall back to Split (not Hit) when surrender isn't available -
-      // e.g. 8,8 vs A under H17 when surrender is off or the max split count is reached.
       if(act==='R') return canSurrender ? 'R' : 'P';
       return act;
     }
@@ -1055,9 +1020,6 @@
     let act = hardRows[clamped][dIdx];
     if(act==='D' && !canDouble) return 'H';
     if(act==='R'){
-      // Hard 17 surrenders only under H17 vs. an Ace; with no surrender
-      // available it falls back to the underlying non-surrender play - Stand
-      // for hard 17+ (H17), Hit for hard 15/16 (both rulesets).
       if(canSurrender) return 'R';
       return (clamped>=17) ? 'S' : 'H';
     }
@@ -1093,10 +1055,10 @@
     seatPref: 'last',     // your seat: 'last', a 0-based position, or 'random' (re-drawn each shoe)
     randSeat: null,
     tableSeat: null,
-    numOthers: 0,         // other players at the table (0-6)
+    numOthers: 0,
     otherAcc: 'auto',     // their accuracy: 'auto' (95%) or a fraction
-    others: [],           // their hands this round
-    kellyBank: 10000,     // bankroll the Kelly ramp is sized from (refreshed each shoe)
+    others: [],
+    kellyBank: 10000,
     kellyFrac: 0.5,
     focus: 'counting',    // which practice the Hi-Lo / Omega II levels run: counting | betsizing
     minBet: 50,
@@ -1106,16 +1068,14 @@
     feedbackDelay: FEEDBACK_DELAY,
     countSystem: 'hilo',
     practiceMode: 'default',
-    // Bet sizing mode
-    acesSeen: 0,          // aces counted so far this shoe (the ace side count)
-    bsShowRunning: false, // hints are off by default so you count in your head
+    acesSeen: 0,
+    bsShowRunning: false,
     bsShowAces: false,
-    showAces: false,      // counting mode: show the ace side count (Omega II)
+    showAces: false,
     bsShowTrue: false,
-    betLocked: false,     // true while bet feedback is on screen
+    betLocked: false,
     betCorrect: 0,
     betTotal: 0,
-    // v3 options (all off / default unless switched on in settings)
     allowSurrender: true,
     das: true,
     bjPay: 1.5,
@@ -1140,7 +1100,7 @@
     checkCorrect: 0,
     checkTotal: 0,
     spots: {},
-    saved: null           // settings to restore when leaving bet sizing mode
+    saved: null
   };
 
   function formatMoney(n){
@@ -1176,30 +1136,22 @@
     renderHistoryPanel();
   }
 
-  // Counts a card into the running count and the ace side count.
   function countCard(card){
     state.runningCount += countTag(card.rank);
     if(card.rank==='A') state.acesSeen++;
     card.counted = true;
   }
 
-  let deferCount = false; // while true, face-up draws are counted when they are shown, not when drawn
+  let deferCount = false;
   let dealGen = 0;
   function drawCard(faceUp){
-    if(state.shoe.length === 0) state.shoe = buildShoe(state.numDecks); // safety net: never run out mid-round
+    if(state.shoe.length === 0) state.shoe = buildShoe(state.numDecks);
     const card = state.shoe.pop();
     card.counted = false;
     if(faceUp && !deferCount) countCard(card);
     updateStatsDisplay();
     return card;
   }
-  // Like drawCard, but pulls the first card in the shoe matching a predicate
-  // instead of the top card. The shoe is already randomly shuffled, so picking
-  // the first match introduces no bias. Used by practice mode to guarantee the
-  // player's starting hand is a hard total / soft total / pair. The fallback to
-  // a normal draw below is a last-resort safety net only - ensureShoeCanSupportPracticeHand
-  // reshuffles ahead of time whenever the shoe can't satisfy the current practice
-  // mode's requirements, so in normal play this fallback should never trigger.
   function drawCardMatching(faceUp, predicate){
     const idx = state.shoe.findIndex(predicate);
     if(idx === -1) return drawCard(faceUp);
@@ -1209,25 +1161,20 @@
     updateStatsDisplay();
     return card;
   }
-  // Deals the player's two starting cards, shaped by the current practice mode.
   function dealPlayerStartingCards(){
     const mode = state.practiceMode;
     if(mode === 'hard'){
-      // No aces, and not a pair, so the hand always resolves via the hard-totals table.
       const c1 = drawCardMatching(true, c => c.rank !== 'A');
       const c2 = drawCardMatching(true, c => c.rank !== 'A' && normalizeRank(c.rank) !== normalizeRank(c1.rank));
       return [c1, c2];
     }
     if(mode === 'soft'){
-      // Ace + a 2-9 card: a genuine soft total, never a pair (A,A) or a natural (A,10).
       const c1 = drawCardMatching(true, c => c.rank === 'A');
       const c2 = drawCardMatching(true, c => c.rank !== 'A' && normalizeRank(c.rank) !== '10');
       return [c1, c2];
     }
     if(mode === 'pairs'){
       const groups = ['2','3','4','5','6','7','8','9','10','A'];
-      // Only choose from groups that actually have 2+ cards left in the shoe,
-      // so we don't gamble on a group that's just run dry.
       const viableGroups = groups.filter(g => state.shoe.filter(c => normalizeRank(c.rank)===g).length >= 2);
       const pickFrom = viableGroups.length ? viableGroups : groups;
       const group = pickFrom[Math.floor(Math.random()*pickFrom.length)];
@@ -1237,11 +1184,6 @@
     }
     return [drawCard(true), drawCard(true)];
   }
-  // Practice modes with tight rank requirements (soft needs an ace, pairs needs
-  // a matching pair, hard needs two *different* non-ace ranks) can occasionally
-  // run low on the specific ranks they need well before the shoe is generally
-  // "low" by card count. Reshuffle early in that case so practice mode always
-  // deals what it promises, and drawCardMatching's fallback is never actually hit.
   function ensureShoeCanSupportPracticeHand(){
     const mode = state.practiceMode;
     if(mode === 'soft'){
@@ -1253,10 +1195,6 @@
       const anyGroupHasPair = groups.some(g => state.shoe.filter(c => normalizeRank(c.rank)===g).length >= 2);
       if(!anyGroupHasPair) startNewShoe();
     } else if(mode === 'hard'){
-      // Needs two non-ace cards from *different* rank groups (e.g. two 6's
-      // wouldn't work, since c2 must differ from c1). Checking raw non-ace
-      // count isn't enough - a shoe could have plenty of non-ace cards but
-      // all from a single rank. Require at least 2 distinct groups present.
       const nonAceGroups = ['2','3','4','5','6','7','8','9','10'];
       const groupsPresent = nonAceGroups.filter(g => state.shoe.some(c => normalizeRank(c.rank)===g));
       if(groupsPresent.length < 2) startNewShoe();
@@ -1277,11 +1215,6 @@
   }
 
   // ---- Bet sizing ----
-  // The betting true count is the running count over the decks left (to the nearest half-deck), plus an ace
-  // correction for systems that do not count aces. Hi-Lo tags an ace -1, which already matches its effect of
-  // removal, so it needs no correction. Omega II tags aces 0, so each ace above or below the expected number
-  // left in the shoe is worth about 2 count points (an ace's effect of removal divided by one Omega II point,
-  // using Wizard of Odds' removal data).
   function halfDecksFor(cardsLeft){
     return Math.max(0.5, Math.round(cardsLeft / 26) / 2);
   }
@@ -1290,7 +1223,6 @@
     return (state.numDecks * 4 - acesSeen) - 4 * halfDecksFor(cardsLeft);
   }
   function aceSurplus(){ return aceSurplusFor(state.acesSeen, state.shoe.length); }
-  // Extra count points per ace of surplus: whatever part of an ace's effect of removal the tag does not cover.
   function aceAdjustment(){
     const tbl = eorTable(), key = state.countSystem;
     const v = Math.round(COUNT_SYSTEMS[key].tags.A - tbl.A / systemSlope(key, tbl));
@@ -1301,23 +1233,17 @@
     return (rc + aceAdjustment() * aceSurplusFor(acesSeen, cardsLeft)) / halfDecksFor(cardsLeft);
   }
   function betTrueCount(){ return betTCFor(state.runningCount, state.acesSeen, state.shoe.length); }
-  // Player edge gained per true-count point (percent). EOR is per card removed from a six-deck shoe,
-  // and removing the same cards from a shoe with D decks left is worth 6/D times as much, so the true count
-  // scales it by 6 regardless of how many decks are in play.
   function edgePerTC(){ return 6 * systemSlope(state.countSystem, eorTable()); }
-  // Blackjack's standard deviation is about 1.15 per unit bet per hand, so its variance is about 1.32.
   const KELLY_VARIANCE = 1.32;
-  // House edge estimate (percent) from Wizard of Odds figures: 0.28% for "Liberal Vegas" rules (6 decks, S17,
-  // DAS, resplit aces, late surrender), plus the WoO cost of each rule difference.
   function houseEdge(){
     let he = 0.28;
-    he += 0.10;                                   // this trainer never resplits aces (WoO: 0.10%)
-    if(state.numDecks === 4) he -= 0.03;          // WoO: 4 decks are ~0.06% better than 8; 6 is halfway
+    he += 0.10;
+    if(state.numDecks === 4) he -= 0.03;
     if(state.numDecks === 8) he += 0.03;
-    if(!state.allowSurrender) he += 0.07;         // WoO: late surrender is worth 0.07%
+    if(!state.allowSurrender) he += 0.07;
     if(state.dealerRule === 'h17') he += 0.22;
     if(!state.das) he += 0.14;
-    if(state.bjPay !== 1.5) he += 1.39;           // 6:5 blackjack
+    if(state.bjPay !== 1.5) he += 1.39;
     return he;
   }
   function parseCustomRamp(str){
@@ -1333,8 +1259,6 @@
     pts.sort((a,b)=>a[0]-b[0]);
     return pts;
   }
-  // Ramp on the whole-number betting true count. Proportional: one unit per `aggr` percent of edge.
-  // Kelly: a fraction of the bankroll. Both never go below one unit and are capped at the chosen spread.
   function betUnitsForTC(tc){
     const t = Math.round(tc);
     if(state.rampType === 'custom'){
@@ -1346,7 +1270,6 @@
       }
     }
     if(state.rampType === 'kelly'){
-      // Kelly: stake a fraction of bankroll equal to edge / variance, scaled by the chosen Kelly fraction.
       const e = (edgePerTC() * t - houseEdge()) / 100;
       if(e <= 0) return 1;
       const bet = state.kellyFrac * (e / KELLY_VARIANCE) * state.kellyBank;
@@ -1517,7 +1440,6 @@
     resetAccBtn: document.getElementById('resetAccBtn')
   };
 
-  // Which counts are currently on screen. Check-ins only ask for counts that are hidden.
   function countVisibility(){
     const cm = state.mode==='counting', bs = state.mode==='betsizing';
     return {
@@ -1558,12 +1480,6 @@
     el.valTrue.textContent = (tc>0?'+':'') + tc.toFixed(1);
     el.valBankroll.textContent = formatMoney(state.bankroll);
 
-    // Shoe prop: a front-view stack of cards, sized to hold numDecks decks at
-    // a fixed px-per-deck, so switching deck counts changes the shoe's full
-    // height too (an 8-deck shoe is taller than a 4-deck one, just like real
-    // life). Thin ticks mark each deck boundary so students can calibrate
-    // "what does one deck look like" by eye. The housing stays visible always;
-    // only the exact numbers are gated by the toggle.
     const PX_PER_DECK = 20;
     const totalCards = state.numDecks * 52;
     const fullHeight = state.numDecks * PX_PER_DECK;
@@ -1595,7 +1511,6 @@
     }
   }
 
-  // A card slides in when it first appears (Web Animations, so re-parenting the element never restarts it).
   function enterAnim(div){
     if(!div.animate) return;
     div._enter = true;
@@ -1615,8 +1530,6 @@
     return div;
   }
 
-  // Table cards keep one element per card, so a re-render never makes dealt cards vanish and reappear.
-  // Only a card's first appearance animates; cards already on the table glide to their new place.
   const cardCache = new WeakMap();
   function tableCardEl(card, faceDown, mini){
     let e = cardCache.get(card);
@@ -1648,7 +1561,6 @@
     });
   }
   function renderTableInner(){
-    // Dealer
     el.dealerCards.innerHTML = '';
     state.dealerCards.forEach((c,i)=>{
       const faceDown = (i===1 && state.dealerHoleHidden);
@@ -1663,7 +1575,6 @@
       el.dealerTotalLabel.textContent = '';
     }
 
-    // Player hands
     el.playerHands.innerHTML = '';
     state.playerHands.forEach((h,idx)=>{
       const group = document.createElement('div');
@@ -1691,7 +1602,6 @@
       }
       el.playerHands.appendChild(group);
     });
-    // Other players
     el.otherSeats.innerHTML = '';
     const me = tableSeat();
     function youSeat(){
@@ -1797,7 +1707,6 @@
       const net = bankrollSeries[bankrollSeries.length-1] - state.startBankroll;
       el.historySummary.innerHTML = 'Net this shoe: <b>'+(net>=0?'+':'')+formatMoney(net)+'</b> &middot; Bankroll: <b>'+formatMoney(bankrollSeries[bankrollSeries.length-1])+'</b>';
     } else {
-      // Chart cumulative strategy accuracy (%) across the shoe as the "performance" line.
       const accSeries = state.handHistory.map(h => h.accuracyPct).filter(v => v!=null);
       el.historyChartWrap.innerHTML = buildChartSVG(accSeries, false);
       el.historySummary.innerHTML = 'Strategy accuracy this shoe: <b>'+state.correctDecisions+'/'+state.totalDecisions+'</b>';
@@ -1836,7 +1745,6 @@
   }
 
   // ---------------- Round flow ----------------
-  // Your seat at the table: seats are numbered from first base (1) to third base (last).
   function mySeat(){
     const n = state.numOthers;
     if(state.seatPref === 'last') return n;
@@ -1847,8 +1755,8 @@
     const k = parseInt(state.seatPref, 10);
     return isNaN(k) ? n : Math.min(k, n);
   }
-  function tableSeat(){ return state.tableSeat == null ? mySeat() : state.tableSeat; } // seat fixed when the round was dealt
-  function seatLabel(i){ return 'P' + (i < tableSeat() ? i + 1 : i + 2); } // label of others[i] by table position
+  function tableSeat(){ return state.tableSeat == null ? mySeat() : state.tableSeat; }
+  function seatLabel(i){ return 'P' + (i < tableSeat() ? i + 1 : i + 2); }
   function ordinal(k){ return k + (k % 100 >= 11 && k % 100 <= 13 ? 'th' : ({1:'st',2:'nd',3:'rd'}[k % 10] || 'th')); }
   function syncSeatOptions(){
     const n = state.numOthers;
@@ -1861,12 +1769,11 @@
     if(!ok) state.seatPref = 'last';
     el.seatSelect.value = state.seatPref;
   }
-  // Pace sets how fast the table moves: ms per card dealt, per player decision, and per dealer card.
   function paceProfile(){
     const d = state.feedbackDelay;
-    if(d >= 1000) return {deal:450, bot:900, dealer:800};  // relaxed: an unhurried dealer
-    if(d >= 500)  return {deal:110, bot:300, dealer:400};  // fast: an experienced casino dealer
-    return {deal:0, bot:30, dealer:250};                   // instant
+    if(d >= 1000) return {deal:450, bot:900, dealer:800};
+    if(d >= 500)  return {deal:110, bot:300, dealer:400};
+    return {deal:0, bot:30, dealer:250};
   }
   function dealNewRound(){
     if(state.realMode && state.bankroll < state.minBet){
@@ -1895,11 +1802,9 @@
     for(let i=0; i<n; i++){
       state.others.push({cards:[], done:false, acted:false, doubled:false, result:null});
     }
-    // The player's two cards are chosen up front (practice modes shape them) but are only counted when dealt.
     deferCount = true;
     let pcs;
     try { pcs = dealPlayerStartingCards(); } finally { deferCount = false; }
-    // Casino order: one card to each seat from first base round to the player, then the dealer, twice.
     const me = mySeat();
     state.tableSeat = me;
     const steps = [];
@@ -1908,7 +1813,7 @@
         if(pos === me) steps.push(()=>{ const c = pcs[pass]; revealCard(c); state.playerHands[0].cards.push(c); });
         else { const i = pos < me ? pos : pos - 1; steps.push(()=>{ state.others[i].cards.push(drawCard(true)); }); }
       }
-      steps.push(()=>{ state.dealerCards.push(drawCard(pass === 0)); }); // second card is the hole card, face down, not counted yet
+      steps.push(()=>{ state.dealerCards.push(drawCard(pass === 0)); });
     }
     const prof = paceProfile();
     const token = ++dealGen;
@@ -1945,11 +1850,10 @@
     if(act === 'Ds') act = canDouble ? 'D' : 'S';
     const {total} = handTotal(seat.cards);
     if(total < 19 && Math.random() > otherAccuracy()){
-      act = (act === 'H') ? 'S' : 'H'; // a plausible slip: hit instead, or stand instead of hitting
+      act = (act === 'H') ? 'S' : 'H';
     }
     return act;
   }
-  // Seats left of you (acting before you) play with which='before'; the rest play after your hands, before the dealer.
   function playOtherSeats(which, done){
     const me = tableSeat();
     const idxs = state.others.map((_, i)=>i).filter(i => which === 'before' ? i < me : i >= me);
@@ -2009,7 +1913,6 @@
   }
   function continueAfterPeek(){
     if(!state.playerHands.length) return;
-    // check player natural blackjack on the single starting hand
     const hand = state.playerHands[0];
     const {total} = handTotal(hand.cards);
     if(total===21){
@@ -2039,7 +1942,7 @@
       logHand(h);
     });
     if(state.realMode && state.insuranceDecision===true){
-      state.bankroll += state.insuranceBet * 3; // 2:1 payout plus original stake back
+      state.bankroll += state.insuranceBet * 3;
     }
     updateStatsDisplay();
     renderTable();
@@ -2065,15 +1968,11 @@
       return;
     }
     const o = handOptions(hand);
-    // Doubling/splitting both require matching the current stake; in real mode,
-    // don't offer them unless the bankroll can actually cover that extra bet
-    // (otherwise the bankroll could be driven negative).
     const canAffordExtraStake = !state.realMode || state.bankroll >= hand.bet;
     setMessage('Your move.');
     setActionButtons({hit:true, stand:true, double:o.canDouble && canAffordExtraStake, split:o.canSplit && canAffordExtraStake, surrender:o.canSurrender});
   }
 
-  // Human-readable label for the situation, used for the weak-spots report.
   function situationLabel(hand, dealerUp, canSplit){
     const up = normalizeRank(dealerUp);
     const cards = hand.cards;
@@ -2091,7 +1990,6 @@
     if(!isRight) s.wrong++;
   }
 
-  // One-line reason shown after a mistake (optional).
   function explainPlay(correct, cards, dealerUp, dev){
     const up = normalizeRank(dealerUp);
     const upN = (up==='A') ? 11 : parseInt(up,10);
@@ -2172,7 +2070,7 @@
     hand.cards.push(drawCard(true));
     const {total} = handTotal(hand.cards);
     renderTable();
-    setActionButtons({}); // disable while feedback message is showing
+    setActionButtons({});
     if(total>21){
       hand.done = true;
       hand.result = 'Bust';
@@ -2189,7 +2087,7 @@
     if(!hand) return;
     judgeAndRecord('S', hand);
     hand.done = true;
-    setActionButtons({}); // disable while feedback message is showing
+    setActionButtons({});
     setTimeout(advanceHand, state.feedbackDelay);
   }
   function doDouble(){
@@ -2208,7 +2106,7 @@
     hand.done = true;
     if(total>21){ hand.result = 'Bust'; logHand(hand); }
     renderTable();
-    setActionButtons({}); // disable while feedback message is showing
+    setActionButtons({});
     setTimeout(advanceHand, state.feedbackDelay);
   }
   function doSplit(){
@@ -2220,7 +2118,7 @@
     const hand1 = {cards:[c1], done:false, hasActed:false, fromSplit:true, doubled:false, result:null, bet:hand.bet};
     const hand2 = {cards:[c2], done:false, hasActed:false, fromSplit:true, doubled:false, result:null, bet:hand.bet};
     if(state.realMode){
-      state.bankroll -= hand.bet; // matching stake for the new hand
+      state.bankroll -= hand.bet;
       updateStatsDisplay();
     }
     hand1.cards.push(drawCard(true));
@@ -2228,7 +2126,7 @@
     if(isAceSplit){ hand1.done = true; hand2.done = true; }
     state.playerHands.splice(state.currentHandIndex, 1, hand1, hand2);
     renderTable();
-    setActionButtons({}); // disable while feedback message is showing
+    setActionButtons({});
     setTimeout(beginHandDecision, state.feedbackDelay);
   }
   function doSurrender(){
@@ -2241,7 +2139,7 @@
     if(state.realMode){ state.bankroll += hand.bet * 0.5; updateStatsDisplay(); }
     logHand(hand);
     renderTable();
-    setActionButtons({}); // disable while feedback message is showing
+    setActionButtons({});
     setTimeout(advanceHand, state.feedbackDelay);
   }
 
@@ -2305,7 +2203,7 @@
       else sd.result = 'Push';
     });
     state.playerHands.forEach(h=>{
-      if(h.result) return; // already resolved (blackjack/bust/surrender)
+      if(h.result) return;
       const {total} = handTotal(h.cards);
       if(total>21){ h.result='Bust'; logHand(h); return; }
       if(dealerTotal>21){ h.result = h.doubled? 'Win (Double)':'Win'; }
@@ -2326,7 +2224,7 @@
 
   // ---------------- End of round, check-ins and reshuffle ----------------
   function reshuffleThreshold(){
-    const extra = 6 * state.numOthers; // room for the other players' cards
+    const extra = 6 * state.numOthers;
     if(state.penetration === 'default') return 60 + extra;
     return Math.max(30 + extra, Math.ceil(state.numDecks * 52 * (1 - state.penetration)));
   }
@@ -2341,8 +2239,6 @@
   }
   function afterRound(){
     if(state.shoe.length < reshuffleThreshold()){
-      // Hold the Deal button until the reshuffle has happened, so a new round
-      // can't start and then have its shoe (and count) swapped out mid-hand.
       setActionButtons({});
       setTimeout(()=>{
         startNewShoe();
@@ -2355,7 +2251,6 @@
     }
   }
 
-  // Count check-ins (optional): pause after a round and ask for the count.
   function checkinFields(){
     const bs = state.mode==='betsizing';
     const sys = COUNT_SYSTEMS[state.countSystem];
@@ -2463,7 +2358,7 @@
       setMessage('Incorrect - ' + correctLabel, 'incorrect', state.explain ? explainInsurance(correctTake, sys.insuranceThreshold) : null);
     }
     state.insuranceDecision = taken;
-    setActionButtons({}); // disable while feedback message is showing
+    setActionButtons({});
     if(state.realMode && taken){
       state.insuranceBet = state.playerHands[0].bet / 2;
       state.bankroll -= state.insuranceBet;
@@ -2479,7 +2374,6 @@
       return;
     }
     if(state.realMode){
-      // Never let a bet exceed what the bankroll can cover.
       const cap = Math.floor(state.bankroll / state.minBet) * state.minBet;
       if(state.currentBet > cap) state.currentBet = cap;
     }
@@ -2528,7 +2422,6 @@
     if(newMode === oldMode && !reshuffle){ syncSettingsControls(); return; }
     cancelCheckin();
     if(newMode === 'betsizing' && oldMode !== 'betsizing'){
-      // Bet sizing needs a bankroll and, like a real table, no exact card count.
       state.saved = {realMode: state.realMode, showCardsLeft: state.showCardsLeft};
       state.realMode = true;
       state.showCardsLeft = false;
@@ -2545,7 +2438,6 @@
     renderTable();
     setMessage(modeMessage(newMode));
   }
-  // Training level: Basic, or a counting system (Hi-Lo, Omega II) with a focus (play & count, or bet sizing).
   function setTraining(level, focus){
     const newMode = level === 'basic' ? 'basic' : focus;
     const newSys = level === 'basic' ? state.countSystem : level;
@@ -2740,7 +2632,6 @@
     });
     return h + '</table>';
   }
-  // Index plays grouped by the true count at which the play changes, lowest count first.
   function indexTableHTML(sysKey){
     const sys = COUNT_SYSTEMS[sysKey];
     const rungs = [];
@@ -2757,8 +2648,8 @@
       if(basic !== d.hi && basic !== d.lo) return;
       const idx = scaledIndex(d.idx, sysKey);
       const play = {hand:(d.type === 'pair' ? (d.key + ',' + d.key) : ('Hard ' + d.key)), up:d.up, n:(d.type === 'pair' ? 100 : 0) + parseInt(d.key, 10) + upVal(d.up) / 100};
-      if(basic === d.lo){ play.act = d.hi; add('up', idx, play); }       // basic strategy until the count rises
-      else { play.act = d.lo; add('down', idx - 1, play); }            // basic strategy until the count falls
+      if(basic === d.lo){ play.act = d.hi; add('up', idx, play); }
+      else { play.act = d.lo; add('down', idx - 1, play); }
     });
     add('up', sys.insuranceThreshold, {hand:'Insurance', up:null, act:'Take', n:0, ins:true});
     rungs.sort((x, y)=> (x.t - y.t) || (x.dir === 'down' ? -1 : 1));
@@ -2877,8 +2768,6 @@
   }
 
   // ---- Speed-count drill ----
-  // Deals a random-length run of cards from the shoe. The length is never a whole number of decks, which would
-  // always end on 0 for a balanced system. Afterwards it asks only for the counts you ticked.
   const DRILL_LENGTHS = {short:[10,25], medium:[25,50], long:[50,100]};
   function drillLength(kind){
     const r = DRILL_LENGTHS[kind] || DRILL_LENGTHS.medium;
@@ -3037,7 +2926,6 @@
       btn.click();
     }
   });
-  // Keep focus off action buttons so Space always means Deal when shortcuts are on.
   document.addEventListener('click', (e)=>{
     if(state.keys && e.target && e.target.tagName==='BUTTON' && !e.target.closest('#settingsPanel, #historyPanel, #checkin, #modal')) e.target.blur();
   });
@@ -3057,7 +2945,6 @@
       out[c.id] = (c.type==='checkbox') ? c.checked : c.value;
     });
     if(state.mode==='betsizing' && state.saved){
-      // Save the settings the mode overrides, not the forced values.
       out.toggleRealMode = state.saved.realMode;
       out.toggleCardsLeft = state.saved.showCardsLeft;
     }
@@ -3149,7 +3036,6 @@
     const prev = state.rampType;
     state.rampType = el.rampTypeSelect.value;
     if(state.rampType === 'custom' && !String(state.customRamp).trim()){
-      // Seed the custom ramp from the one that was in use.
       state.rampType = prev === 'custom' ? 'auto' : prev;
       state.customRamp = autoRampAsText();
       state.rampType = 'custom';
@@ -3167,7 +3053,6 @@
     updateStatsDisplay();
   });
   el.seatSelect.addEventListener('change', ()=>{ state.seatPref = el.seatSelect.value; state.randSeat = null; state.tableSeat = null; state.others = []; renderTable(); });
-  // Settings groups behave as an accordion: opening one closes the others.
   const sgroups = Array.from(document.querySelectorAll('details.sgroup'));
   sgroups.forEach(dt=>dt.addEventListener('toggle', ()=>{ if(dt.open) sgroups.forEach(o=>{ if(o !== dt) o.open = false; }); }));
   el.playerAccSelect.addEventListener('change', ()=>{ state.otherAcc = el.playerAccSelect.value; });
