@@ -443,7 +443,6 @@
   .note{font-size:0.72rem;line-height:1.5;color:var(--text-on-paper-dim);margin-bottom:10px;}
   .setting-row input[type="text"]{font-family:inherit;font-size:0.83rem;width:150px;padding:5px 8px;border:1px solid var(--navy);border-radius:2px;background:var(--paper-dim);color:var(--text-on-paper);}
   .cut-marker{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:3;pointer-events:none;bottom:0;}
-  .why{font-size:0.82rem;font-weight:400;color:var(--text-on-navy-dim);margin-top:4px;line-height:1.4;}
   .checkin{background:rgba(255,255,255,0.08);border:1px solid var(--table-accent-soft);border-radius:2px;padding:10px 12px;margin:8px auto;max-width:560px;color:var(--text-on-navy);font-size:0.9rem;}
   .checkin h4{margin:0 0 8px 0;font-size:0.78rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--table-accent-soft);}
   .checkin .ci-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
@@ -540,7 +539,6 @@
             <option value="pairs">Pairs</option>
           </select>
         </div>
-        <div class="setting-row"><label class="toggle-label"><input type="checkbox" id="toggleExplain"> Explain mistakes</label></div>
       </div>
 
       <details class="sgroup">
@@ -1073,7 +1071,6 @@
     bjPay: 1.5,
     penetration: 'default',
     useDeviations: false,
-    explain: false,
     showShoe: true,
     rampType: 'auto',
     aggr: 0.5,
@@ -1373,7 +1370,6 @@
     askAces: document.getElementById('askAces'),
     askDecks: document.getElementById('askDecks'),
     speedDrillBtn: document.getElementById('speedDrillBtn'),
-    toggleExplain: document.getElementById('toggleExplain'),
     toggleShoe: document.getElementById('toggleShoe'),
     shoeWrap: document.getElementById('shoeWrap'),
     cutMarker: document.getElementById('cutMarker'),
@@ -1619,10 +1615,8 @@
     el.playerTotalLabel.textContent = state.playerHands.length>1 ? ('Hand '+(state.currentHandIndex+1)+' of '+state.playerHands.length) : '';
   }
 
-  function setMessage(text, cls, why){
-    let html = cls ? ('<span class="'+cls+'">'+text+'</span>') : text;
-    if(why) html += '<div class="why">'+why+'</div>';
-    el.messageBar.innerHTML = html;
+  function setMessage(text, cls){
+    el.messageBar.innerHTML = cls ? ('<span class="'+cls+'">'+text+'</span>') : text;
   }
 
   function updateStatsDisplayLite(){
@@ -1976,57 +1970,6 @@
     if(!isRight) s.wrong++;
   }
 
-  function explainPlay(correct, cards, dealerUp, dev){
-    const up = normalizeRank(dealerUp);
-    const upN = (up==='A') ? 11 : parseInt(up,10);
-    const weak = upN>=2 && upN<=6;
-    const {total, soft} = handTotal(cards);
-    if(dev){
-      const pos = dev.tc >= dev.idx;
-      let why;
-      if(correct==='H') why = 'Low count: fewer tens left, so hitting is safer.';
-      else if(correct==='R') why = 'High count: more tens for the dealer, so give up half the bet.';
-      else why = 'High count: more tens left, so hitting busts more and doubling or splitting gains more.';
-      return 'True count ' + sgn(dev.tc) + ' is ' + (pos ? 'at or above' : 'below') + ' the index (' + sgn(dev.idx) + '). ' + why;
-    }
-    switch(correct){
-      case 'R':
-        return 'This hand wins under a quarter of the time; surrendering loses less.';
-      case 'P': {
-        const g = normalizeRank(cards[0].rank);
-        if(g==='A') return 'Aces: each starts a hand at 11, far better than a soft 12.';
-        if(g==='8') return '16 is the worst hard total; each 8 starts a better hand.';
-        return 'Two hands against a weak dealer card beat one mediocre hand.';
-      }
-      case 'D':
-        return 'Strong hand against a weak dealer card: put more money out.';
-      case 'Ds':
-        return 'Strong soft hand against a weak dealer card.';
-      case 'S':
-        if(!soft && total>=17) return 'Hitting 17 or more busts too often.';
-        if(weak) return 'Dealer shows 2–6 and busts often; let them take the risk.';
-        if(soft) return 'A soft 18 or better is already decent; hitting can make it worse.';
-        return 'Standing has the best expected result here.';
-      case 'H':
-        if(!soft && total<=11) return 'This total cannot bust.';
-        if(!soft && total===12 && (up==='2' || up==='3')) return 'Borderline: the dealer busts slightly less, so hitting edges out standing.';
-        if(soft) return 'Cannot bust on one card, and too weak to stand on.';
-        return 'Dealer shows 7 through Ace and likely reaches 17+; standing loses more often.';
-    }
-    return null;
-  }
-  function explainInsurance(correctTake, idx){
-    if(state.mode==='basic') return 'Insurance wins only if the hole card is a ten; without a count it loses money.';
-    return correctTake
-      ? 'Pays 2:1; at this count over a third of the unseen cards are tens (index ' + sgn(idx) + ').'
-      : 'Needs a third or more of unseen cards to be tens (true count ' + sgn(idx) + ' or higher).';
-  }
-  function explainBet(info){
-    const rc = state.runningCount, s = aceSurplus(), d = halfDecksRemaining(), a = aceAdjustment();
-    const calc = a ? '(' + sgn(rc) + ' + ' + a + ' × ' + sgn(s) + ') ÷ ' + d : sgn(rc) + ' ÷ ' + d;
-    return 'Betting TC = ' + calc + ' = ' + sgn(Number(info.tc.toFixed(1))) + ', rounded to ' + sgn(Math.round(info.tc)) + ' → ' + info.units + (info.units===1 ? ' unit.' : ' units.');
-  }
-
   function judgeAndRecord(action, hand){
     const dealerUp = state.dealerCards[0].rank;
     const o = handOptions(hand);
@@ -2040,11 +1983,10 @@
     recordDecision(isRight);
     recordSpot(situationLabel(hand, dealerUp, o.canSplit), isRight);
     const extra = dev ? ' · TC ' + sgn(dev.tc) + (dev.tc>=dev.idx ? ' ≥ ' : ' < ') + sgn(dev.idx) : '';
-    const why = (!isRight && state.explain) ? explainPlay(correct, hand.cards, dealerUp, dev) : null;
     if(isRight){
-      setMessage('Correct - '+actionLabel(correct)+extra, 'correct', why);
+      setMessage('Correct - '+actionLabel(correct)+extra, 'correct');
     } else {
-      setMessage('Incorrect - '+actionLabel(correct)+extra, 'incorrect', why);
+      setMessage('Incorrect - '+actionLabel(correct)+extra, 'incorrect');
     }
   }
 
@@ -2324,8 +2266,7 @@
     state.checkTotal++;
     if(allRight) state.checkCorrect++;
     updateAccuracyDisplay();
-    const why = (!allRight && state.explain) ? 'True count within 1 and decks within half a deck are accepted.' : null;
-    setMessage((allRight ? 'Correct - ' : 'Incorrect - ') + parts.join(' · '), allRight ? 'correct' : 'incorrect', why);
+    setMessage((allRight ? 'Correct - ' : 'Incorrect - ') + parts.join(' · '), allRight ? 'correct' : 'incorrect');
     closeCheckin(true);
   }
 
@@ -2341,7 +2282,7 @@
     if(isRight){
       setMessage('Correct - ' + correctLabel, 'correct');
     } else {
-      setMessage('Incorrect - ' + correctLabel, 'incorrect', state.explain ? explainInsurance(correctTake, sys.insuranceThreshold) : null);
+      setMessage('Incorrect - ' + correctLabel, 'incorrect');
     }
     state.insuranceDecision = taken;
     setActionButtons({});
@@ -2376,7 +2317,7 @@
     if(isRight){
       setMessage('Correct - ' + label, 'correct');
     } else {
-      setMessage('Incorrect - ' + label + ' · TC ' + (info.tc>0?'+':'') + info.tc.toFixed(1), 'incorrect', state.explain ? explainBet(info) : null);
+      setMessage('Incorrect - ' + label + ' · TC ' + (info.tc>0?'+':'') + info.tc.toFixed(1), 'incorrect');
     }
     state.betLocked = true;
     setActionButtons({});
@@ -2974,7 +2915,6 @@
   el.askAces.addEventListener('change', ()=>{ state.askAces = el.askAces.checked; });
   el.askDecks.addEventListener('change', ()=>{ state.askDecks = el.askDecks.checked; });
   el.toggleShoe.addEventListener('change', ()=>{ state.showShoe = el.toggleShoe.checked; updateStatsDisplay(); });
-  el.toggleExplain.addEventListener('change', ()=>{ state.explain = el.toggleExplain.checked; });
   el.speedDrillBtn.addEventListener('click', openSpeedDrill);
   el.tagDrillBtn.addEventListener('click', openTagDrill);
   el.chartBtn.addEventListener('click', ()=>{
