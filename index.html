@@ -709,14 +709,6 @@
         <div class="setting-row"><label class="toggle-label"><input type="checkbox" id="toggleShoe" checked> Shoe picture</label></div>
       </details>
 
-      <details class="sgroup">
-        <summary>Preferences</summary>
-        <div class="setting-row"><label class="toggle-label"><input type="checkbox" id="toggleKeys"> Keyboard shortcuts</label></div>
-        <div class="note">H S D P R &middot; Y / N insurance &middot; Space or Enter deal &middot; +/&minus; bet</div>
-        <div class="setting-row"><label class="toggle-label"><input type="checkbox" id="toggleSave"> Remember settings &amp; stats</label></div>
-        <button class="newshoe-btn" id="clearSavedBtn" type="button">Clear saved data</button>
-      </details>
-
       <button class="newshoe-btn" id="newShoeBtn" type="button">Shuffle new shoe</button>
       <div class="edge-footer" title="Estimated with basic strategy, from Wizard of Odds rule values"><span>House edge</span><b id="houseEdgeValue">--</b></div>
     </div>
@@ -1082,8 +1074,6 @@
     penetration: 'default',
     useDeviations: false,
     explain: false,
-    keys: false,
-    saveProgress: false,
     showShoe: true,
     rampType: 'auto',
     aggr: 0.5,
@@ -1384,9 +1374,6 @@
     askDecks: document.getElementById('askDecks'),
     speedDrillBtn: document.getElementById('speedDrillBtn'),
     toggleExplain: document.getElementById('toggleExplain'),
-    toggleKeys: document.getElementById('toggleKeys'),
-    toggleSave: document.getElementById('toggleSave'),
-    clearSavedBtn: document.getElementById('clearSavedBtn'),
     toggleShoe: document.getElementById('toggleShoe'),
     shoeWrap: document.getElementById('shoeWrap'),
     cutMarker: document.getElementById('cutMarker'),
@@ -1651,7 +1638,6 @@
     const chkPct = state.checkTotal ? Math.round(100*state.checkCorrect/state.checkTotal) : 0;
     el.checkAccStat.textContent = state.checkCorrect+'/'+state.checkTotal+' ('+(state.checkTotal?chkPct:'--')+'%)';
     updateStatsDisplayLite();
-    scheduleSave();
   }
 
   function recordDecision(isCorrect){
@@ -2567,7 +2553,7 @@
     updateBetControls();
   });
 
-  // ---------------- v3 options: labels, help text, modal, chart, drill, shortcuts, saving ----------------
+  // ---------------- Options: labels, help text, modal, chart, drill, shortcuts ----------------
   function payoutLabel(){ return state.bjPay === 1.5 ? '3:2' : '6:5'; }
 
   function updateMoneyLabels(){
@@ -2903,13 +2889,13 @@
     next();
   }
 
-  // ---- Keyboard shortcuts (optional) ----
+  // ---- Keyboard shortcuts (always on): H S D P R, Y / N insurance, Space or Enter deal, +/- bet ----
   document.addEventListener('keydown', (e)=>{
     if(e.key === 'Escape'){
       if(el.modal.classList.contains('open')) closeModal();
       return;
     }
-    if(!state.keys || e.ctrlKey || e.metaKey || e.altKey) return;
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
     if(el.modal.classList.contains('open')) return;
     const t = e.target;
     if(t && (t.tagName==='INPUT' || t.tagName==='SELECT' || t.tagName==='TEXTAREA')) return;
@@ -2926,95 +2912,12 @@
       btn.click();
     }
   });
+  // Drop focus from table buttons after a click so Space/Enter always deals instead of re-pressing the focused button
   document.addEventListener('click', (e)=>{
-    if(state.keys && e.target && e.target.tagName==='BUTTON' && !e.target.closest('#settingsPanel, #historyPanel, #checkin, #modal')) e.target.blur();
+    if(e.target && e.target.tagName==='BUTTON' && !e.target.closest('#settingsPanel, #historyPanel, #checkin, #modal')) e.target.blur();
   });
 
-  // ---- Saving (optional) ----
-  const SAVE_KEY = 'bjTrainer.v3';
-  let saveTimer = null;
-  let loadingSaved = false;
-  function storageOK(){
-    try{ const k='__bj_test'; window.localStorage.setItem(k,'1'); window.localStorage.removeItem(k); return true; }
-    catch(e){ return false; }
-  }
-  function collectControls(){
-    const out = {};
-    el.settingsPanel.querySelectorAll('select, input[type="checkbox"], input[type="text"]').forEach(c=>{
-      if(!c.id) return;
-      out[c.id] = (c.type==='checkbox') ? c.checked : c.value;
-    });
-    if(state.mode==='betsizing' && state.saved){
-      out.toggleRealMode = state.saved.realMode;
-      out.toggleCardsLeft = state.saved.showCardsLeft;
-    }
-    return out;
-  }
-  function saveProgressNow(){
-    if(!state.saveProgress || loadingSaved) return;
-    try{
-      const data = {
-        v: 3,
-        mode: state.mode,
-        system: state.countSystem,
-        focus: state.focus,
-        controls: collectControls(),
-        stats: {
-          correctDecisions: state.correctDecisions, totalDecisions: state.totalDecisions,
-          betCorrect: state.betCorrect, betTotal: state.betTotal,
-          checkCorrect: state.checkCorrect, checkTotal: state.checkTotal,
-          bankroll: state.bankroll, spots: state.spots
-        }
-      };
-      window.localStorage.setItem(SAVE_KEY, JSON.stringify(data));
-    }catch(e){ /* storage unavailable: keep playing without saving */ }
-  }
-  function scheduleSave(){
-    if(!state.saveProgress || loadingSaved) return;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveProgressNow, 400);
-  }
-  function loadProgress(){
-    let data = null;
-    try{
-      const raw = window.localStorage.getItem(SAVE_KEY);
-      if(raw) data = JSON.parse(raw);
-    }catch(e){ return; }
-    if(!data || data.v !== 3 || !data.controls) return;
-    loadingSaved = true;
-    try{
-      Object.keys(data.controls).forEach(id=>{
-        const c = document.getElementById(id);
-        if(!c || !el.settingsPanel.contains(c)) return;
-        const v = data.controls[id];
-        if(c.tagName === 'SELECT' && !Array.from(c.options).some(o=>o.value === String(v))) return;
-        if(c.type === 'checkbox'){
-          c.checked = !!v;
-          c.dispatchEvent(new Event('change'));
-        } else {
-          c.value = v;
-          c.dispatchEvent(new Event(c.tagName==='INPUT' ? 'input' : 'change'));
-        }
-      });
-      const st = data.stats || {};
-      ['correctDecisions','totalDecisions','betCorrect','betTotal','checkCorrect','checkTotal'].forEach(k=>{
-        if(typeof st[k] === 'number') state[k] = st[k];
-      });
-      if(typeof st.bankroll === 'number') state.bankroll = st.bankroll;
-      if(st.spots && typeof st.spots === 'object') state.spots = st.spots;
-      if(typeof st.bankroll === 'number') state.kellyBank = state.bankroll;
-      if(data.focus === 'counting' || data.focus === 'betsizing') state.focus = data.focus;
-      if(data.system && COUNT_SYSTEMS[data.system] && data.system !== state.countSystem){ state.countSystem = data.system; startNewShoe(); }
-      if(data.mode === 'counting' || data.mode === 'betsizing') setMode(data.mode);
-      updateAccuracyDisplay();
-      updateStatsDisplay();
-      setMessage('Saved progress restored.');
-    } finally {
-      loadingSaved = false;
-    }
-  }
-
-  // ---- Wiring for the new controls ----
+  // ---- Wiring for the remaining controls ----
   el.toggleSurrender.addEventListener('change', ()=>{ state.allowSurrender = el.toggleSurrender.checked; updateBetHelp(); });
   el.toggleDas.addEventListener('change', ()=>{ state.das = el.toggleDas.checked; updateBetHelp(); });
   el.bjPaySelect.addEventListener('change', ()=>{ state.bjPay = parseFloat(el.bjPaySelect.value); updateBetHelp(); });
@@ -3072,7 +2975,6 @@
   el.askDecks.addEventListener('change', ()=>{ state.askDecks = el.askDecks.checked; });
   el.toggleShoe.addEventListener('change', ()=>{ state.showShoe = el.toggleShoe.checked; updateStatsDisplay(); });
   el.toggleExplain.addEventListener('change', ()=>{ state.explain = el.toggleExplain.checked; });
-  el.toggleKeys.addEventListener('change', ()=>{ state.keys = el.toggleKeys.checked; });
   el.speedDrillBtn.addEventListener('click', openSpeedDrill);
   el.tagDrillBtn.addEventListener('click', openTagDrill);
   el.chartBtn.addEventListener('click', ()=>{
@@ -3081,22 +2983,6 @@
   });
   el.modalClose.addEventListener('click', closeModal);
   el.modalBackdrop.addEventListener('click', closeModal);
-  el.toggleSave.addEventListener('change', ()=>{
-    if(el.toggleSave.checked && !storageOK()){
-      el.toggleSave.checked = false;
-      setMessage('Saving is not available in this browser.');
-      return;
-    }
-    state.saveProgress = el.toggleSave.checked;
-    if(state.saveProgress){ saveProgressNow(); }
-    else { try{ window.localStorage.removeItem(SAVE_KEY); }catch(e){} }
-  });
-  el.clearSavedBtn.addEventListener('click', ()=>{
-    try{ window.localStorage.removeItem(SAVE_KEY); }catch(e){}
-    setMessage('Saved data cleared.');
-  });
-  el.settingsPanel.addEventListener('change', scheduleSave);
-  el.settingsPanel.addEventListener('input', scheduleSave);
 
   // ---------------- Init ----------------
   startNewShoe();
@@ -3105,7 +2991,6 @@
   updateMoneyLabels();
   updateBetHelp();
   renderTable();
-  loadProgress();
 })();
 </script>
 </body>
